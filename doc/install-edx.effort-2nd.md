@@ -9,57 +9,76 @@ ref. https://edx.readthedocs.io/projects/edx-installing-configuring-and-running/
 prerequisites ref. https://edx.readthedocs.io/projects/edx-installing-configuring-and-running/en/latest/installation/installation_prerequisites.html#installation-prerequisites
 
 
-# install docker-compose 
+# install prerequisite
+## docker-compose 
 ref. https://gist.github.com/namgivu/536ae64983b515026bd5d5c908668207#file-install-docker-compose-sh
 
 ensure using overlay2
 ```bash
 : root@edtek:~ skedx $
-docker info | grep -i 'storage driver' # should get  > Storage Driver: overlay2
+docker info | grep -i 'storage driver' | grep overlay2 # should get  > Storage Driver: overlay2
 ```
+
+## install make
+```bash
+: root@edtek:~ skedx $
+apt install -y make
+```
+
+## make swap file 8Gb
+ref. https://gist.github.com/namgivu/e3fbb84ad9c8a3be43f4f16c4c229f97
 
 
 # install Devstack 
 ref. https://edx.readthedocs.io/projects/edx-installing-configuring-and-running/en/latest/installation/install_devstack.html#install-devstack
 
 NOTE the command `./repo.sh checkout` not working from the official repo, 
-so I make a fork here `git@github.com:namgivu/devstack.git` based on branch `open-release/hawthorn.master`
+so I make a fork here `git@github.com:namgivu/devstack.git` 
+based on branch `open-release/hawthorn.master` - how to choose branch ref. https://edx.readthedocs.io/projects/edx-developer-docs/en/latest/named_releases.html
+
 
 ```bash 
 : root@edtek:~ skedx $
-SKEDX_HOME="$HOME/skedx/"; mkdir -p $SKEDX_HOME
+skedx_home="$HOME/skedx/"; mkdir -p $skedx_home
 
-export OPENEDX_RELEASE=hawthorn.master; 
-export DEVSTACK_WORKSPACE=$SKEDX_HOME;  
+export OPENEDX_RELEASE=hawthorn.master
+export OPENEDX_RELEASE=ironwood.master # ref. https://edx.readthedocs.io/projects/edx-developer-docs/en/latest/named_releases.html#ironwood
+export DEVSTACK_WORKSPACE=$skedx_home  
 
-cd $SKEDX_HOME
-    git clone https://github.com/namgivu/devstack
-    cd "$SKEDX_HOME/devstack"
-        git checkout feature/nn-deploy-effort; git pull
+cd $skedx_home
+    git clone https://github.com/edx/devstack
+    cd "$skedx_home/devstack"
+        git checkout open-release/ironwood.master; git pull
     
         # clone the correct branch in the local checkout of each service repository
-        make dev.clone; ./repo.sh clone
+        note="
+        Clone the Open edX service repositories. 
+        The Docker Compose file mounts a host volume for each service’s executing code. 
         
-        # after cloned, run checkout 
-        make dev.checkout; ./repo.sh checkout
+        The host directory defaults to be a sibling of the /devstack directory. 
+        For example, if you clone the edx/devstack repository to ~/workspace/devstack, 
+        host volumes will be expected in ~/workspace/course-discovery, ~/workspace/ecommerce, etc. 
+        
+        You can clone these repositories with the following command.
+        "
+        make dev.clone # ./repo.sh clone
+        
+        # ONLY after cloned, run checkout 
+        # make dev.checkout # ./repo.sh checkout
         
         # start the various services 
         make dev.provision
-        note='if running the :provision has issues/hanging, you may need to create swap file to provide more memory for the machine eg 8Gb'
+        note='running the :provision may have issues/hanging, then we need to create swap file to provide more memory for the machine eg 8Gb'
+        
     cd -
 cd -
-    
+```
 
-note="
-Clone the Open edX service repositories. 
-The Docker Compose file mounts a host volume for each service’s executing code. 
-
-The host directory defaults to be a sibling of the /devstack directory. 
-For example, if you clone the edx/devstack repository to ~/workspace/devstack, 
-host volumes will be expected in ~/workspace/course-discovery, ~/workspace/ecommerce, etc. 
-
-You can clone these repositories with the following command.
-"
-make dev.clone
-
+# start the Open edX Developer Stack 
+ref. https://edx.readthedocs.io/projects/edx-installing-configuring-and-running/en/latest/installation/start_devstack.html#starting-devstack
+after installed, this command will start the services
+```bash
+cd "$skedx_home/devstack"
+    make dev.up
+cd -
 ```
